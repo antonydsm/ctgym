@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, Group, Image, Progress, Stack, Text, Title } from '@mantine/core'
+import { Badge, Button, Divider, Group, Image, Progress, Stack, Text, Title } from '@mantine/core'
 import { api } from '@renderer/lib/api'
+import logo from '@renderer/assets/logo.png'
 import type { UpdateStatus, WhatsappStatus } from '@shared/types'
 
 const STATUS_LABEL: Record<WhatsappStatus, string> = {
@@ -124,6 +125,23 @@ function SettingsView() {
             Reiniciar e instalar ahora
           </Button>
         )}
+      </Stack>
+
+      <Divider />
+
+      <Stack gap={4}>
+        <Text fw={500}>Acerca de</Text>
+        <Group gap="sm" wrap="nowrap">
+          <Image src={logo} alt="CT GYM" w={40} h={40} fit="contain" />
+          <Stack gap={0}>
+            <Text size="sm" fw={600}>
+              CT GYM — Centro de Entrenamiento
+            </Text>
+            <Text size="xs" c="dimmed">
+              Gestión de rutinas y envío por WhatsApp
+            </Text>
+          </Stack>
+        </Group>
       </Stack>
     </Stack>
   )

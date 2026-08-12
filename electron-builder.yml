@@ -18,6 +18,11 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   perMachine: false
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerSidebar: resources/nsis-sidebar.bmp
+  uninstallerSidebar: resources/nsis-sidebar.bmp
+  artifactName: 'CT GYM Setup ${version}.${ext}'
 publish:
   provider: github
   owner: antonydsm

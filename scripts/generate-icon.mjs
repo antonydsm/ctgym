@@ -7,6 +7,10 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
 const source = join(root, 'resources/logo.jpg')
+// Recorte cuadrado del emblema (engranaje + "CT"), sin el texto "CT GYM /
+// CENTRO DE ENTRENAMIENTO" debajo — ese texto es ilegible en un ícono de
+// 16-32px y sobra visualmente en la barra de tareas.
+const iconSource = join(root, 'resources/logo-icon-source.png')
 const bannerSource = join(root, 'resources/banner.png')
 
 async function main() {
@@ -15,16 +19,16 @@ async function main() {
   // Windows .ico (multi-resolution) for the installer/taskbar/window icon
   const icoSizes = [16, 24, 32, 48, 64, 128, 256]
   const pngBuffers = await Promise.all(
-    icoSizes.map((size) => sharp(source).resize(size, size).png().toBuffer())
+    icoSizes.map((size) => sharp(iconSource).resize(size, size).png().toBuffer())
   )
   const icoBuffer = await pngToIco(pngBuffers)
   await writeFile(join(root, 'resources/icon.ico'), icoBuffer)
 
   // Single 512px PNG for electron-builder (mac/linux) and as a build resource
-  await sharp(source).resize(512, 512).png().toFile(join(root, 'resources/icon.png'))
+  await sharp(iconSource).resize(512, 512).png().toFile(join(root, 'resources/icon.png'))
 
   // Small PNG for the in-app header logo (fallback/unused once banner is in place)
-  await sharp(source)
+  await sharp(iconSource)
     .resize(160, 160)
     .png()
     .toFile(join(root, 'src/renderer/src/assets/logo.png'))
