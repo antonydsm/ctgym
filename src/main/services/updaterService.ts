@@ -54,5 +54,7 @@ export function initUpdater(): void {
 }
 
 export function quitAndInstall(): void {
-  autoUpdater.quitAndInstall()
+  // isSilent=true evita el asistente de NSIS (Siguiente/Instalar/Finalizar);
+  // isForceRunAfter=true reabre la app sola después de instalar.
+  autoUpdater.quitAndInstall(true, true)
 }
