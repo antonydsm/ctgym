@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, Group, Image, Stack, Text, Title } from '@mantine/core'
+import { Badge, Button, Group, Image, Progress, Stack, Text, Title } from '@mantine/core'
 import { api } from '@renderer/lib/api'
-import type { WhatsappStatus } from '@shared/types'
+import type { UpdateStatus, WhatsappStatus } from '@shared/types'
 
 const STATUS_LABEL: Record<WhatsappStatus, string> = {
   idle: 'Sin vincular',
@@ -21,9 +21,22 @@ const STATUS_COLOR: Record<WhatsappStatus, string> = {
   disconnected: 'red'
 }
 
+const UPDATE_STATUS_LABEL: Record<UpdateStatus, string> = {
+  idle: 'Sin chequear',
+  checking: 'Buscando actualizaciones...',
+  'not-available': 'Al día',
+  available: 'Descargando actualización...',
+  downloading: 'Descargando actualización...',
+  downloaded: 'Actualización lista para instalar',
+  error: 'No se pudo chequear actualizaciones'
+}
+
 function SettingsView() {
   const [status, setStatus] = useState<WhatsappStatus>('idle')
   const [qr, setQr] = useState<string | null>(null)
+  const [appVersion, setAppVersion] = useState<string | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle')
+  const [updateProgress, setUpdateProgress] = useState(0)
 
   useEffect(() => {
     api.whatsapp.getStatus().then(setStatus)
@@ -37,6 +50,19 @@ function SettingsView() {
     return () => {
       unsubStatus()
       unsubQr()
+    }
+  }, [])
+
+  useEffect(() => {
+    api.updater.getAppVersion().then(setAppVersion)
+    api.updater.getStatus().then((s) => setUpdateStatus(s.status))
+
+    const unsubStatus = api.updater.onStatus(setUpdateStatus)
+    const unsubProgress = api.updater.onProgress(setUpdateProgress)
+
+    return () => {
+      unsubStatus()
+      unsubProgress()
     }
   }, [])
 
@@ -74,6 +100,29 @@ function SettingsView() {
             El WhatsApp del gimnasio ya está vinculado. Las rutinas se pueden enviar directamente
             desde la pestaña Rutinas.
           </Text>
+        )}
+      </Stack>
+
+      <Stack gap="xs">
+        <Text fw={500}>Versión</Text>
+        <Group>
+          <Text size="sm">{appVersion ? `v${appVersion}` : '—'}</Text>
+          <Badge color={updateStatus === 'downloaded' ? 'green' : 'gray'} variant="light">
+            {UPDATE_STATUS_LABEL[updateStatus]}
+          </Badge>
+        </Group>
+        {(updateStatus === 'downloading' || updateStatus === 'available') && (
+          <Progress value={updateProgress} size="sm" maw={260} color="ctRed" />
+        )}
+        {updateStatus === 'downloaded' && (
+          <Button
+            onClick={() => api.updater.quitAndInstall()}
+            size="xs"
+            variant="light"
+            color="ctRed"
+          >
+            Reiniciar e instalar ahora
+          </Button>
         )}
       </Stack>
     </Stack>

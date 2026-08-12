@@ -7,6 +7,7 @@ import type {
   Routine,
   RoutineSaveInput,
   RoutineWithExercises,
+  UpdateStatus,
   WhatsappStatus
 } from '../shared/types'
 
@@ -37,6 +38,13 @@ interface Api {
     getStatus: () => Promise<WhatsappStatus>
     onQr: (callback: (dataUrl: string) => void) => () => void
     onStatus: (callback: (status: WhatsappStatus) => void) => () => void
+  }
+  updater: {
+    getStatus: () => Promise<{ status: UpdateStatus; version: string | null }>
+    getAppVersion: () => Promise<string>
+    quitAndInstall: () => Promise<void>
+    onStatus: (callback: (status: UpdateStatus) => void) => () => void
+    onProgress: (callback: (percent: number) => void) => () => void
   }
 }
 

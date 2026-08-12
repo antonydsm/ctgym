@@ -6,6 +6,8 @@ import { registerClientsIpc } from './ipc/clients'
 import { registerExercisesIpc } from './ipc/exercises'
 import { registerRoutinesIpc } from './ipc/routines'
 import { registerWhatsappIpc } from './ipc/whatsapp'
+import { registerUpdaterIpc } from './ipc/updater'
+import { initUpdater } from './services/updaterService'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -48,12 +50,20 @@ app.whenReady().then(() => {
   registerExercisesIpc()
   registerRoutinesIpc()
   registerWhatsappIpc()
+  registerUpdaterIpc()
 
   createWindow()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  // Solo tiene sentido en el build empaquetado (electron-updater no
+  // encuentra app-update.yml en dev) y necesita la ventana ya creada para
+  // poder emitir el estado al renderer.
+  if (app.isPackaged) {
+    initUpdater()
+  }
 }).catch((error: Error) => {
   dialog.showErrorBox('CT GYM no pudo iniciar', error.stack ?? String(error))
   app.quit()

@@ -13,4 +13,12 @@ extraResources:
     to: chromium
 win:
   icon: resources/icon.ico
-  target: portable
+  target: nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+publish:
+  provider: github
+  owner: antonydsm
+  repo: ctgym

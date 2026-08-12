@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import { AppShell, Group, Image, NavLink, Stack } from '@mantine/core'
+import { useEffect, useState } from 'react'
+import { AppShell, Group, Image, NavLink, Stack, Text } from '@mantine/core'
+import { modals } from '@mantine/modals'
 import banner from './assets/banner.png'
 import xeraLogo from './assets/logo-xera-blanco.png'
+import { api } from './lib/api'
 import ClientsView from './views/ClientsView'
 import CatalogView from './views/CatalogView'
 import RoutineBuilderView from './views/RoutineBuilderView'
@@ -19,6 +21,25 @@ type NavKey = (typeof NAV_ITEMS)[number]['key']
 function App() {
   const [active, setActive] = useState<NavKey>('clients')
   const ActiveView = NAV_ITEMS.find((item) => item.key === active)?.view ?? ClientsView
+
+  useEffect(() => {
+    const unsubStatus = api.updater.onStatus((status) => {
+      if (status !== 'downloaded') return
+      modals.openConfirmModal({
+        title: 'Actualización lista',
+        children: (
+          <Text size="sm">
+            Hay una nueva versión de CT GYM descargada. Se puede instalar ahora (la app se
+            reinicia) o más tarde, la próxima vez que abras el programa.
+          </Text>
+        ),
+        labels: { confirm: 'Reiniciar e instalar', cancel: 'Más tarde' },
+        confirmProps: { color: 'ctRed' },
+        onConfirm: () => api.updater.quitAndInstall()
+      })
+    })
+    return unsubStatus
+  }, [])
 
   return (
     <AppShell header={{ height: 64 }} navbar={{ width: 220, breakpoint: 0 }} padding="lg">

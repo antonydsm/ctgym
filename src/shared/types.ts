@@ -69,3 +69,12 @@ export type WhatsappStatus =
   | 'authenticated'
   | 'ready'
   | 'disconnected'
+
+export type UpdateStatus =
+  | 'idle'
+  | 'checking'
+  | 'not-available'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'

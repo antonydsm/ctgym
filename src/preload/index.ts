@@ -8,6 +8,7 @@ import type {
   Routine,
   RoutineSaveInput,
   RoutineWithExercises,
+  UpdateStatus,
   WhatsappStatus
 } from '../shared/types'
 
@@ -50,6 +51,24 @@ const api = {
         callback(status)
       ipcRenderer.on('whatsapp:status', listener)
       return () => ipcRenderer.removeListener('whatsapp:status', listener)
+    }
+  },
+  updater: {
+    getStatus: (): Promise<{ status: UpdateStatus; version: string | null }> =>
+      ipcRenderer.invoke('updater:get-status'),
+    getAppVersion: (): Promise<string> => ipcRenderer.invoke('updater:get-app-version'),
+    quitAndInstall: (): Promise<void> => ipcRenderer.invoke('updater:quit-and-install'),
+    onStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void =>
+        callback(status)
+      ipcRenderer.on('updater:status', listener)
+      return () => ipcRenderer.removeListener('updater:status', listener)
+    },
+    onProgress: (callback: (percent: number) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, percent: number): void =>
+        callback(percent)
+      ipcRenderer.on('updater:progress', listener)
+      return () => ipcRenderer.removeListener('updater:progress', listener)
     }
   }
 }
