@@ -1,0 +1,16 @@
+appId: com.ctgym.app
+productName: CT GYM
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+  - resources/**/*
+  - '!resources/chromium/**/*'
+  - package.json
+extraResources:
+  - from: resources/chromium
+    to: chromium
+win:
+  icon: resources/icon.ico
+  target: portable

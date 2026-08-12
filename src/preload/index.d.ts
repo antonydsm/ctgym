@@ -1,0 +1,48 @@
+import { ElectronAPI } from '@electron-toolkit/preload'
+import type {
+  Client,
+  ClientInput,
+  Exercise,
+  ExerciseInput,
+  Routine,
+  RoutineSaveInput,
+  RoutineWithExercises,
+  WhatsappStatus
+} from '../shared/types'
+
+interface Api {
+  clients: {
+    list: () => Promise<Client[]>
+    create: (input: ClientInput) => Promise<Client>
+    update: (id: string, input: Partial<ClientInput>) => Promise<Client>
+    delete: (id: string) => Promise<void>
+  }
+  exercises: {
+    list: () => Promise<Exercise[]>
+    create: (input: ExerciseInput) => Promise<Exercise>
+    update: (id: string, input: Partial<ExerciseInput>) => Promise<Exercise>
+    delete: (id: string) => Promise<void>
+    uploadImage: () => Promise<string | null>
+  }
+  routines: {
+    listByClient: (clientId: string) => Promise<Routine[]>
+    get: (id: string) => Promise<RoutineWithExercises>
+    save: (input: RoutineSaveInput) => Promise<string>
+    delete: (id: string) => Promise<void>
+    exportPdf: (id: string) => Promise<string>
+    sendWhatsapp: (id: string) => Promise<void>
+  }
+  whatsapp: {
+    init: () => Promise<void>
+    getStatus: () => Promise<WhatsappStatus>
+    onQr: (callback: (dataUrl: string) => void) => () => void
+    onStatus: (callback: (status: WhatsappStatus) => void) => () => void
+  }
+}
+
+declare global {
+  interface Window {
+    electron: ElectronAPI
+    api: Api
+  }
+}
