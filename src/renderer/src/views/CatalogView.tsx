@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Button, Group, Loader, Modal, Stack, Text, Title } from '@mantine/core'
+import { useMemo, useState } from 'react'
+import { Button, Group, Loader, Modal, MultiSelect, Stack, Text, TextInput, Title } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@renderer/lib/api'
 import { getErrorMessage } from '@renderer/lib/errors'
+import { MUSCLE_GROUPS } from '@renderer/lib/muscleGroups'
 import ExerciseForm from '@renderer/components/ExerciseForm'
 import ExerciseTable from '@renderer/components/ExerciseTable'
 import type { Exercise, ExerciseInput } from '@shared/types'
@@ -13,11 +14,26 @@ function CatalogView() {
   const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
+  const [search, setSearch] = useState('')
+  const [muscleFilter, setMuscleFilter] = useState<string[]>([])
 
   const exercisesQuery = useQuery({
     queryKey: ['exercises'],
     queryFn: () => api.exercises.list()
   })
+
+  const filteredExercises = useMemo(() => {
+    if (!exercisesQuery.data) return exercisesQuery.data
+    const normalizedSearch = search.trim().toLowerCase()
+    return exercisesQuery.data.filter((exercise) => {
+      const matchesSearch =
+        !normalizedSearch || exercise.name.toLowerCase().includes(normalizedSearch)
+      const matchesMuscle =
+        muscleFilter.length === 0 ||
+        muscleFilter.some((group) => exercise.muscle_groups.includes(group))
+      return matchesSearch && matchesMuscle
+    })
+  }, [exercisesQuery.data, search, muscleFilter])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['exercises'] })
 
@@ -87,12 +103,38 @@ function CatalogView() {
         <Button onClick={openCreateModal}>Nuevo ejercicio</Button>
       </Group>
 
+      {exercisesQuery.data && (
+        <Group>
+          <TextInput
+            placeholder="Buscar por nombre..."
+            value={search}
+            onChange={(event) => setSearch(event.currentTarget.value)}
+            w={240}
+          />
+          <MultiSelect
+            placeholder="Filtrar por músculo"
+            data={MUSCLE_GROUPS as unknown as string[]}
+            value={muscleFilter}
+            onChange={setMuscleFilter}
+            clearable
+            w={280}
+          />
+        </Group>
+      )}
+
       {exercisesQuery.isLoading && <Loader />}
       {exercisesQuery.isError && (
         <Text c="red">Error al cargar ejercicios: {getErrorMessage(exercisesQuery.error)}</Text>
       )}
-      {exercisesQuery.data && (
-        <ExerciseTable exercises={exercisesQuery.data} onEdit={openEditModal} onDelete={confirmDelete} />
+      {filteredExercises && (
+        <>
+          {filteredExercises.length === 0 && (
+            <Text c="dimmed" size="sm">
+              Ningún ejercicio coincide con la búsqueda.
+            </Text>
+          )}
+          <ExerciseTable exercises={filteredExercises} onEdit={openEditModal} onDelete={confirmDelete} />
+        </>
       )}
 
       <Modal
