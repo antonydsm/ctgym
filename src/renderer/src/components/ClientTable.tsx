@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Group, Table, Text } from '@mantine/core'
+import { Badge, Button, Group, Table, Text } from '@mantine/core'
 import type { Client, ClientPayment } from '@shared/types'
 import { formatPhone } from '@renderer/lib/phone'
 import { PLAN_LABEL, todayDateString } from '@shared/membership'
@@ -71,26 +71,33 @@ function ClientTable({
               </Table.Td>
               <Table.Td>
                 <Group gap="xs" justify="flex-end" wrap="nowrap">
-                  <ActionIcon
-                    variant="subtle"
-                    color="ctRed"
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="green"
+                    leftSection="$"
                     onClick={() => onRegisterPayment(client)}
-                    aria-label="Registrar pago"
-                    title="Registrar pago"
                   >
-                    $
-                  </ActionIcon>
-                  <ActionIcon variant="subtle" onClick={() => onEdit(client)} aria-label="Editar">
-                    ✎
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
+                    Pagar
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="blue"
+                    leftSection="✎"
+                    onClick={() => onEdit(client)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
                     color="red"
+                    leftSection="✕"
                     onClick={() => onDelete(client)}
-                    aria-label="Eliminar"
                   >
-                    ✕
-                  </ActionIcon>
+                    Eliminar
+                  </Button>
                 </Group>
               </Table.Td>
             </Table.Tr>
