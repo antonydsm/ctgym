@@ -24,6 +24,8 @@ interface Api {
     listByClient: (clientId: string) => Promise<ClientPayment[]>
     listLatest: () => Promise<ClientPayment[]>
     create: (input: ClientPaymentInput) => Promise<ClientPayment>
+    update: (id: string, input: Omit<ClientPaymentInput, 'client_id'>) => Promise<ClientPayment>
+    delete: (id: string) => Promise<void>
     exportReceipt: (paymentId: string) => Promise<string>
   }
   exercises: {

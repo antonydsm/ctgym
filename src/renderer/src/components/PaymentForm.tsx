@@ -1,14 +1,30 @@
-import { Button, Divider, Group, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core'
+import { useState } from 'react'
+import {
+  ActionIcon,
+  Button,
+  Divider,
+  Group,
+  NumberInput,
+  Select,
+  Stack,
+  Table,
+  Text,
+  TextInput
+} from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@renderer/lib/api'
 import { getErrorMessage } from '@renderer/lib/errors'
 import { MEMBERSHIP_PLANS, PLAN_LABEL, todayDateString, type MembershipPlan } from '@shared/membership'
-import type { Client, ClientPaymentInput } from '@shared/types'
+import type { Client, ClientPayment, ClientPaymentInput } from '@shared/types'
+
+type PaymentValues = Omit<ClientPaymentInput, 'client_id'>
 
 interface PaymentFormProps {
   client: Client
-  onSubmit: (values: Omit<ClientPaymentInput, 'client_id'>) => void
+  onSubmit: (values: PaymentValues) => void
+  onUpdate: (paymentId: string, values: PaymentValues) => Promise<unknown>
+  onDelete: (paymentId: string) => void
   onCancel: () => void
   submitting?: boolean
 }
@@ -19,31 +35,54 @@ interface FormValues {
   paid_at: string
 }
 
+function emptyFormValues(): FormValues {
+  return { plan: 'mensual', amount: '', paid_at: todayDateString() }
+}
+
 function formatDateOnly(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   return `${d}/${m}/${y}`
 }
 
-function PaymentForm({ client, onSubmit, onCancel, submitting }: PaymentFormProps) {
+function PaymentForm({ client, onSubmit, onUpdate, onDelete, onCancel, submitting }: PaymentFormProps) {
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+
   const historyQuery = useQuery({
     queryKey: ['payments', 'byClient', client.id],
     queryFn: () => api.payments.listByClient(client.id)
   })
 
   const form = useForm<FormValues>({
-    initialValues: { plan: 'mensual', amount: '', paid_at: todayDateString() },
+    initialValues: emptyFormValues(),
     validate: {
       amount: (value) => (typeof value === 'number' && value > 0 ? null : 'Ingresá un monto válido'),
       paid_at: (value) => (value ? null : 'Ingresá una fecha')
     }
   })
 
-  function handleSubmit(values: FormValues) {
-    onSubmit({
+  function handleEdit(payment: ClientPayment) {
+    setEditingPaymentId(payment.id)
+    form.setValues({ plan: payment.plan, amount: payment.amount, paid_at: payment.paid_at })
+  }
+
+  function handleCancelEdit() {
+    setEditingPaymentId(null)
+    form.setValues(emptyFormValues())
+  }
+
+  async function handleSubmit(values: FormValues) {
+    const payload: PaymentValues = {
       plan: values.plan,
       amount: values.amount as number,
       paid_at: values.paid_at
-    })
+    }
+    if (editingPaymentId) {
+      await onUpdate(editingPaymentId, payload)
+      setEditingPaymentId(null)
+      form.setValues(emptyFormValues())
+    } else {
+      onSubmit(payload)
+    }
   }
 
   return (
@@ -66,11 +105,16 @@ function PaymentForm({ client, onSubmit, onCancel, submitting }: PaymentFormProp
             {...form.getInputProps('paid_at')}
           />
           <Group justify="flex-end" mt="sm">
+            {editingPaymentId && (
+              <Button variant="subtle" onClick={handleCancelEdit} disabled={submitting}>
+                Cancelar edición
+              </Button>
+            )}
             <Button variant="default" onClick={onCancel} disabled={submitting}>
-              Cancelar
+              Cerrar
             </Button>
             <Button type="submit" loading={submitting}>
-              Registrar pago y generar ticket
+              {editingPaymentId ? 'Guardar cambios y generar ticket' : 'Registrar pago y generar ticket'}
             </Button>
           </Group>
         </Stack>
@@ -101,6 +145,7 @@ function PaymentForm({ client, onSubmit, onCancel, submitting }: PaymentFormProp
               <Table.Th>Plan</Table.Th>
               <Table.Th>Monto</Table.Th>
               <Table.Th>Vence</Table.Th>
+              <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -110,6 +155,29 @@ function PaymentForm({ client, onSubmit, onCancel, submitting }: PaymentFormProp
                 <Table.Td>{PLAN_LABEL[payment.plan]}</Table.Td>
                 <Table.Td>{payment.amount}</Table.Td>
                 <Table.Td>{formatDateOnly(payment.due_at)}</Table.Td>
+                <Table.Td>
+                  <Group gap={4} justify="flex-end" wrap="nowrap">
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      onClick={() => handleEdit(payment)}
+                      aria-label="Editar pago"
+                      title="Editar pago"
+                    >
+                      ✎
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      color="red"
+                      onClick={() => onDelete(payment.id)}
+                      aria-label="Eliminar pago"
+                      title="Eliminar pago"
+                    >
+                      ✕
+                    </ActionIcon>
+                  </Group>
+                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>

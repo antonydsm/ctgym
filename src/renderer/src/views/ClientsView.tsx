@@ -81,6 +81,30 @@ function ClientsView() {
     onError: (error: Error) => notifications.show({ message: error.message, color: 'red' })
   })
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Omit<ClientPaymentInput, 'client_id'> }) =>
+      api.payments.update(id, input),
+    onSuccess: async (payment) => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      notifications.show({ message: 'Pago actualizado', color: 'ctRed' })
+      try {
+        await api.payments.exportReceipt(payment.id)
+      } catch (error) {
+        notifications.show({ message: getErrorMessage(error), color: 'red' })
+      }
+    },
+    onError: (error: Error) => notifications.show({ message: error.message, color: 'red' })
+  })
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (id: string) => api.payments.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      notifications.show({ message: 'Pago eliminado', color: 'ctRed' })
+    },
+    onError: (error: Error) => notifications.show({ message: error.message, color: 'red' })
+  })
+
   function openCreateModal() {
     setEditingClient(null)
     setModalOpen(true)
@@ -112,6 +136,27 @@ function ClientsView() {
   function handlePaymentSubmit(values: Omit<ClientPaymentInput, 'client_id'>) {
     if (!payingClient) return
     paymentMutation.mutate({ ...values, client_id: payingClient.id })
+  }
+
+  async function handlePaymentUpdate(
+    paymentId: string,
+    values: Omit<ClientPaymentInput, 'client_id'>
+  ) {
+    await updatePaymentMutation.mutateAsync({ id: paymentId, input: values })
+  }
+
+  function handlePaymentDelete(paymentId: string) {
+    modals.openConfirmModal({
+      title: 'Eliminar pago',
+      children: (
+        <Text size="sm">
+          ¿Seguro que querés eliminar este pago? Esta acción no se puede deshacer.
+        </Text>
+      ),
+      labels: { confirm: 'Eliminar', cancel: 'Cancelar' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => deletePaymentMutation.mutate(paymentId)
+    })
   }
 
   return (
@@ -159,8 +204,10 @@ function ClientsView() {
           <PaymentForm
             client={payingClient}
             onSubmit={handlePaymentSubmit}
+            onUpdate={handlePaymentUpdate}
+            onDelete={handlePaymentDelete}
             onCancel={() => setPayingClient(null)}
-            submitting={paymentMutation.isPending}
+            submitting={paymentMutation.isPending || updatePaymentMutation.isPending}
           />
         )}
       </Modal>

@@ -53,6 +53,32 @@ export function registerPaymentsIpc(): void {
     }
   )
 
+  ipcMain.handle(
+    'payments:update',
+    async (
+      _event,
+      id: string,
+      input: Omit<ClientPaymentInput, 'client_id'>
+    ): Promise<ClientPayment> => {
+      await ensureSignedIn()
+      const dueAt = addMonths(input.paid_at, PLAN_MONTHS[input.plan])
+      const { data, error } = await supabase
+        .from('client_payments')
+        .update({ ...input, due_at: dueAt })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data as ClientPayment
+    }
+  )
+
+  ipcMain.handle('payments:delete', async (_event, id: string): Promise<void> => {
+    await ensureSignedIn()
+    const { error } = await supabase.from('client_payments').delete().eq('id', id)
+    if (error) throw error
+  })
+
   ipcMain.handle('payments:export-receipt', async (_event, paymentId: string): Promise<string> => {
     const path = await exportPaymentReceiptToPdf(paymentId)
     await shell.openPath(path)

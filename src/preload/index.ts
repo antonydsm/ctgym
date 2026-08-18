@@ -28,6 +28,11 @@ const api = {
     listLatest: (): Promise<ClientPayment[]> => ipcRenderer.invoke('payments:listLatest'),
     create: (input: ClientPaymentInput): Promise<ClientPayment> =>
       ipcRenderer.invoke('payments:create', input),
+    update: (
+      id: string,
+      input: Omit<ClientPaymentInput, 'client_id'>
+    ): Promise<ClientPayment> => ipcRenderer.invoke('payments:update', id, input),
+    delete: (id: string): Promise<void> => ipcRenderer.invoke('payments:delete', id),
     exportReceipt: (paymentId: string): Promise<string> =>
       ipcRenderer.invoke('payments:export-receipt', paymentId)
   },

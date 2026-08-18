@@ -212,20 +212,26 @@ export async function exportPaymentReceiptToPdf(paymentId: string): Promise<stri
   const payment = data as unknown as PaymentReceiptData
   const months = PLAN_MONTHS[payment.plan]
 
-  const dashedLine = {
-    canvas: [
-      {
-        type: 'line',
-        x1: 0,
-        y1: 0,
-        x2: RECEIPT_WIDTH - 24,
-        y2: 0,
-        lineWidth: 1,
-        lineColor: '#999999',
-        dash: { length: 2, space: 2 }
-      }
-    ],
-    margin: [0, 6, 0, 6] as [number, number, number, number]
+  // Función, no un objeto const reusado: si el mismo objeto de contenido
+  // aparece dos veces en el documento, pdfmake arrastra la posición
+  // calculada la primera vez y corrompe el render de la segunda aparición
+  // (aparecían unas barras/rayas grises de más cerca del cupón).
+  function dashedLine() {
+    return {
+      canvas: [
+        {
+          type: 'line',
+          x1: 0,
+          y1: 0,
+          x2: RECEIPT_WIDTH - 24,
+          y2: 0,
+          lineWidth: 1,
+          lineColor: '#999999',
+          dash: { length: 2, space: 2 }
+        }
+      ],
+      margin: [0, 6, 0, 6] as [number, number, number, number]
+    }
   }
 
   const docDefinition = {
@@ -240,12 +246,12 @@ export async function exportPaymentReceiptToPdf(paymentId: string): Promise<stri
         alignment: 'center',
         color: '#666666'
       },
-      dashedLine,
+      dashedLine(),
       { text: `ATLETA: ${payment.client.full_name.toUpperCase()}`, fontSize: 8, margin: [0, 2, 0, 4] },
       { text: `CÉDULA: ${payment.client.cedula || '—'}`, fontSize: 8, margin: [0, 0, 0, 4] },
       { text: `PLAN: ${months} MES(ES)`, fontSize: 8, margin: [0, 0, 0, 4] },
       { text: `VENCE: ${formatDateOnly(payment.due_at)}`, fontSize: 8 },
-      dashedLine,
+      dashedLine(),
       {
         table: {
           widths: ['*'],
