@@ -317,7 +317,7 @@ function RoutineBuilderView() {
             <Group justify="space-between" mt="md">
               <div>
                 {routineId && (
-                  <Button variant="subtle" color="red" onClick={confirmDeleteRoutine}>
+                  <Button variant="light" color="red" leftSection="✕" onClick={confirmDeleteRoutine}>
                     Eliminar rutina
                   </Button>
                 )}

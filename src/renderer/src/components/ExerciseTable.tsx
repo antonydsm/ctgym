@@ -1,4 +1,4 @@
-import { ActionIcon, Anchor, Badge, Group, Image, Table, Text } from '@mantine/core'
+import { Anchor, Badge, Button, Group, Image, Table, Text } from '@mantine/core'
 import type { Exercise } from '@shared/types'
 
 interface ExerciseTableProps {
@@ -64,17 +64,18 @@ function ExerciseTable({ exercises, onEdit, onDelete }: ExerciseTableProps) {
             </Table.Td>
             <Table.Td>
               <Group gap="xs" justify="flex-end">
-                <ActionIcon variant="subtle" onClick={() => onEdit(exercise)} aria-label="Editar">
-                  ✎
-                </ActionIcon>
-                <ActionIcon
-                  variant="subtle"
+                <Button size="xs" variant="light" color="blue" leftSection="✎" onClick={() => onEdit(exercise)}>
+                  Editar
+                </Button>
+                <Button
+                  size="xs"
+                  variant="light"
                   color="red"
+                  leftSection="✕"
                   onClick={() => onDelete(exercise)}
-                  aria-label="Eliminar"
                 >
-                  ✕
-                </ActionIcon>
+                  Eliminar
+                </Button>
               </Group>
             </Table.Td>
           </Table.Tr>

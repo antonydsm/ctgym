@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  ActionIcon,
   Button,
   Divider,
   Group,
@@ -157,25 +156,24 @@ function PaymentForm({ client, onSubmit, onUpdate, onDelete, onCancel, submittin
                 <Table.Td>{formatDateOnly(payment.due_at)}</Table.Td>
                 <Table.Td>
                   <Group gap={4} justify="flex-end" wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="blue"
+                      leftSection="✎"
                       onClick={() => handleEdit(payment)}
-                      aria-label="Editar pago"
-                      title="Editar pago"
                     >
-                      ✎
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
+                      Editar
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="light"
                       color="red"
+                      leftSection="✕"
                       onClick={() => onDelete(payment.id)}
-                      aria-label="Eliminar pago"
-                      title="Eliminar pago"
                     >
-                      ✕
-                    </ActionIcon>
+                      Eliminar
+                    </Button>
                   </Group>
                 </Table.Td>
               </Table.Tr>

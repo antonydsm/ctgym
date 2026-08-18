@@ -1,4 +1,4 @@
-import { ActionIcon, Group, NumberInput, Paper, Stack, Text, TextInput } from '@mantine/core'
+import { ActionIcon, Button, Group, NumberInput, Paper, Stack, Text, TextInput } from '@mantine/core'
 
 export interface DraftExercise {
   key: string
@@ -79,14 +79,15 @@ function RoutineExerciseRow({
           </Group>
         </div>
 
-        <ActionIcon
-          variant="subtle"
+        <Button
+          size="xs"
+          variant="light"
           color="red"
+          leftSection="✕"
           onClick={() => onRemove(draft.key)}
-          aria-label="Quitar ejercicio"
         >
-          ✕
-        </ActionIcon>
+          Quitar
+        </Button>
       </Group>
     </Paper>
   )
