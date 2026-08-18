@@ -2,6 +2,8 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
   Client,
   ClientInput,
+  ClientPayment,
+  ClientPaymentInput,
   Exercise,
   ExerciseInput,
   Routine,
@@ -17,6 +19,12 @@ interface Api {
     create: (input: ClientInput) => Promise<Client>
     update: (id: string, input: Partial<ClientInput>) => Promise<Client>
     delete: (id: string) => Promise<void>
+  }
+  payments: {
+    listByClient: (clientId: string) => Promise<ClientPayment[]>
+    listLatest: () => Promise<ClientPayment[]>
+    create: (input: ClientPaymentInput) => Promise<ClientPayment>
+    exportReceipt: (paymentId: string) => Promise<string>
   }
   exercises: {
     list: () => Promise<Exercise[]>

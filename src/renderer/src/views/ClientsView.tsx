@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, Group, Loader, Modal, Stack, Text, Title } from '@mantine/core'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
@@ -7,17 +7,32 @@ import { api } from '@renderer/lib/api'
 import { getErrorMessage } from '@renderer/lib/errors'
 import ClientForm from '@renderer/components/ClientForm'
 import ClientTable from '@renderer/components/ClientTable'
-import type { Client, ClientInput } from '@shared/types'
+import PaymentForm from '@renderer/components/PaymentForm'
+import type { Client, ClientInput, ClientPayment, ClientPaymentInput } from '@shared/types'
 
 function ClientsView() {
   const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [payingClient, setPayingClient] = useState<Client | null>(null)
 
   const clientsQuery = useQuery({
     queryKey: ['clients'],
     queryFn: () => api.clients.list()
   })
+
+  const latestPaymentsQuery = useQuery({
+    queryKey: ['payments', 'latest'],
+    queryFn: () => api.payments.listLatest()
+  })
+
+  const latestPaymentByClient = useMemo(() => {
+    const map = new Map<string, ClientPayment>()
+    for (const payment of latestPaymentsQuery.data ?? []) {
+      map.set(payment.client_id, payment)
+    }
+    return map
+  }, [latestPaymentsQuery.data])
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['clients'] })
 
@@ -51,6 +66,21 @@ function ClientsView() {
     onError: (error: Error) => notifications.show({ message: error.message, color: 'red' })
   })
 
+  const paymentMutation = useMutation({
+    mutationFn: (input: ClientPaymentInput) => api.payments.create(input),
+    onSuccess: async (payment) => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      setPayingClient(null)
+      notifications.show({ message: 'Pago registrado', color: 'ctRed' })
+      try {
+        await api.payments.exportReceipt(payment.id)
+      } catch (error) {
+        notifications.show({ message: getErrorMessage(error), color: 'red' })
+      }
+    },
+    onError: (error: Error) => notifications.show({ message: error.message, color: 'red' })
+  })
+
   function openCreateModal() {
     setEditingClient(null)
     setModalOpen(true)
@@ -79,6 +109,11 @@ function ClientsView() {
     }
   }
 
+  function handlePaymentSubmit(values: Omit<ClientPaymentInput, 'client_id'>) {
+    if (!payingClient) return
+    paymentMutation.mutate({ ...values, client_id: payingClient.id })
+  }
+
   return (
     <Stack>
       <Group justify="space-between">
@@ -91,7 +126,13 @@ function ClientsView() {
         <Text c="red">Error al cargar clientes: {getErrorMessage(clientsQuery.error)}</Text>
       )}
       {clientsQuery.data && (
-        <ClientTable clients={clientsQuery.data} onEdit={openEditModal} onDelete={confirmDelete} />
+        <ClientTable
+          clients={clientsQuery.data}
+          latestPaymentByClient={latestPaymentByClient}
+          onEdit={openEditModal}
+          onDelete={confirmDelete}
+          onRegisterPayment={setPayingClient}
+        />
       )}
 
       <Modal
@@ -106,6 +147,22 @@ function ClientsView() {
           onCancel={() => setModalOpen(false)}
           submitting={createMutation.isPending || updateMutation.isPending}
         />
+      </Modal>
+
+      <Modal
+        opened={payingClient !== null}
+        onClose={() => setPayingClient(null)}
+        title="Registrar pago"
+        size="lg"
+      >
+        {payingClient && (
+          <PaymentForm
+            client={payingClient}
+            onSubmit={handlePaymentSubmit}
+            onCancel={() => setPayingClient(null)}
+            submitting={paymentMutation.isPending}
+          />
+        )}
       </Modal>
     </Stack>
   )

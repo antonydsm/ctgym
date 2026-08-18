@@ -2,6 +2,13 @@ import { ipcMain } from 'electron'
 import { supabase, ensureSignedIn } from '../services/supabaseClient'
 import type { Client, ClientInput } from '../../shared/types'
 
+function withFullName(input: Partial<ClientInput>): Partial<ClientInput> & { full_name?: string } {
+  if (input.first_name === undefined && input.last_name === undefined) return input
+  const firstName = input.first_name?.trim() ?? ''
+  const lastName = input.last_name?.trim() ?? ''
+  return { ...input, full_name: [firstName, lastName].filter(Boolean).join(' ') }
+}
+
 export function registerClientsIpc(): void {
   ipcMain.handle('clients:list', async (): Promise<Client[]> => {
     await ensureSignedIn()
@@ -15,7 +22,11 @@ export function registerClientsIpc(): void {
 
   ipcMain.handle('clients:create', async (_event, input: ClientInput): Promise<Client> => {
     await ensureSignedIn()
-    const { data, error } = await supabase.from('clients').insert(input).select().single()
+    const { data, error } = await supabase
+      .from('clients')
+      .insert(withFullName(input))
+      .select()
+      .single()
     if (error) throw error
     return data as Client
   })
@@ -26,7 +37,7 @@ export function registerClientsIpc(): void {
       await ensureSignedIn()
       const { data, error } = await supabase
         .from('clients')
-        .update(input)
+        .update(withFullName(input))
         .eq('id', id)
         .select()
         .single()

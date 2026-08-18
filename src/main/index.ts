@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.ico?asset'
 import { registerClientsIpc } from './ipc/clients'
 import { registerExercisesIpc } from './ipc/exercises'
+import { registerPaymentsIpc } from './ipc/payments'
 import { registerRoutinesIpc } from './ipc/routines'
 import { registerWhatsappIpc } from './ipc/whatsapp'
 import { registerUpdaterIpc } from './ipc/updater'
@@ -48,6 +49,7 @@ app.whenReady().then(() => {
 
   registerClientsIpc()
   registerExercisesIpc()
+  registerPaymentsIpc()
   registerRoutinesIpc()
   registerWhatsappIpc()
   registerUpdaterIpc()

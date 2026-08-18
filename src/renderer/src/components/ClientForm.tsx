@@ -12,7 +12,9 @@ interface ClientFormProps {
 }
 
 interface FormValues {
-  full_name: string
+  first_name: string
+  last_name: string
+  cedula: string
   countryCode: string
   localPhone: string
   notes: string
@@ -20,17 +22,31 @@ interface FormValues {
 
 function toFormValues(input?: ClientInput): FormValues {
   if (!input) {
-    return { full_name: '', countryCode: DEFAULT_COUNTRY_CODE, localPhone: '', notes: '' }
+    return {
+      first_name: '',
+      last_name: '',
+      cedula: '',
+      countryCode: DEFAULT_COUNTRY_CODE,
+      localPhone: '',
+      notes: ''
+    }
   }
   const { countryCode, localPhone } = splitPhone(input.phone)
-  return { full_name: input.full_name, countryCode, localPhone, notes: input.notes ?? '' }
+  return {
+    first_name: input.first_name,
+    last_name: input.last_name ?? '',
+    cedula: input.cedula ?? '',
+    countryCode,
+    localPhone,
+    notes: input.notes ?? ''
+  }
 }
 
 function ClientForm({ initialValues, submitLabel, onSubmit, onCancel, submitting }: ClientFormProps) {
   const form = useForm<FormValues>({
     initialValues: toFormValues(initialValues),
     validate: {
-      full_name: (value) => (value.trim().length > 0 ? null : 'Ingresá un nombre'),
+      first_name: (value) => (value.trim().length > 0 ? null : 'Ingresá un nombre'),
       localPhone: (value, values) => {
         const country = getCountry(values.countryCode)
         return new RegExp(`^\\d{${country.digits}}$`).test(value.trim())
@@ -44,7 +60,9 @@ function ClientForm({ initialValues, submitLabel, onSubmit, onCancel, submitting
 
   function handleSubmit(values: FormValues) {
     onSubmit({
-      full_name: values.full_name,
+      first_name: values.first_name,
+      last_name: values.last_name || null,
+      cedula: values.cedula || null,
       phone: joinPhone(values.countryCode, values.localPhone),
       notes: values.notes
     })
@@ -53,7 +71,15 @@ function ClientForm({ initialValues, submitLabel, onSubmit, onCancel, submitting
   return (
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <Stack>
-        <TextInput label="Nombre completo" placeholder="Juan Pérez" {...form.getInputProps('full_name')} />
+        <Group grow align="flex-start">
+          <TextInput label="Nombre" placeholder="Juan" {...form.getInputProps('first_name')} />
+          <TextInput label="Apellido" placeholder="Pérez" {...form.getInputProps('last_name')} />
+        </Group>
+        <TextInput
+          label="Cédula"
+          placeholder="Opcional"
+          {...form.getInputProps('cedula')}
+        />
         <Group align="flex-end" gap="sm" wrap="nowrap">
           <Select
             label="País"

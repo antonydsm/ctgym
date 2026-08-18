@@ -1,13 +1,30 @@
+import type { MembershipPlan } from './membership'
+
 export interface Client {
   id: string
   full_name: string
+  first_name: string
+  last_name: string | null
+  cedula: string | null
   phone: string
   notes: string | null
   active: boolean
   created_at: string
 }
 
-export type ClientInput = Pick<Client, 'full_name' | 'phone' | 'notes'>
+export type ClientInput = Pick<Client, 'first_name' | 'last_name' | 'cedula' | 'phone' | 'notes'>
+
+export interface ClientPayment {
+  id: string
+  client_id: string
+  plan: MembershipPlan
+  amount: number
+  paid_at: string
+  due_at: string
+  created_at: string
+}
+
+export type ClientPaymentInput = Pick<ClientPayment, 'client_id' | 'plan' | 'amount' | 'paid_at'>
 
 export interface Exercise {
   id: string

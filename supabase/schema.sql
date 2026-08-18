@@ -130,6 +130,42 @@ create policy "Staff can manage routine_exercises"
   using (true)
   with check (true);
 
+-- Ficha de socio: cédula (opcional) y nombre/apellido separados para el
+-- recibo. full_name se mantiene y la app la recalcula sola al guardar, para
+-- no tocar el resto de la app (armador de rutinas, PDF, WhatsApp) que ya
+-- usa full_name.
+alter table public.clients add column if not exists cedula text;
+alter table public.clients add column if not exists first_name text;
+alter table public.clients add column if not exists last_name text;
+
+-- Clientes cargados antes de este cambio: separamos full_name en
+-- nombre/apellido lo mejor posible (todo lo que sigue al primer espacio
+-- pasa a apellido).
+update public.clients
+set
+  first_name = coalesce(first_name, split_part(full_name, ' ', 1)),
+  last_name = coalesce(last_name, nullif(trim(substring(full_name from position(' ' in full_name) + 1)), ''))
+where first_name is null;
+
+create table if not exists public.client_payments (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  plan text not null check (plan in ('mensual', 'trimestral', 'semestral', 'anual')),
+  amount numeric(12, 2) not null,
+  paid_at date not null,
+  due_at date not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.client_payments enable row level security;
+
+create policy "Staff can manage client_payments"
+  on public.client_payments
+  for all
+  to authenticated
+  using (true)
+  with check (true);
+
 create table if not exists public.routine_sends (
   id uuid primary key default gen_random_uuid(),
   routine_id uuid references public.routines(id) on delete cascade,

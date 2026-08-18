@@ -3,7 +3,8 @@ import { join, dirname } from 'path'
 import { app } from 'electron'
 import pdfMake from 'pdfmake'
 import { supabase, ensureSignedIn } from './supabaseClient'
-import type { Client, Exercise, RoutineExercise } from '../../shared/types'
+import type { Client, ClientPayment, Exercise, RoutineExercise } from '../../shared/types'
+import { PLAN_MONTHS } from '../../shared/membership'
 import bannerAsset from '../../../resources/banner-optimized.png?asset'
 import xeraLogoAsset from '../../../resources/xera-logo.png?asset'
 
@@ -43,6 +44,15 @@ interface RoutinePdfData {
 function formatDate(iso: string): string {
   const date = new Date(iso)
   return date.toLocaleDateString('es-UY', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+// paid_at/due_at viajan como 'YYYY-MM-DD' (sin hora). Formatear con `Date` +
+// toLocaleDateString corre el riesgo de mostrar un día menos en husos
+// horarios negativos (medianoche UTC cae en el día anterior en hora local)
+// — armamos el texto directo desde los números, sin pasar por Date.
+function formatDateOnly(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return `${d}/${m}/${y}`
 }
 
 function sanitizeFilename(name: string): string {
@@ -171,6 +181,112 @@ export async function exportRoutineToPdf(routineId: string): Promise<string> {
   const clientSlug = sanitizeFilename(routine.client.full_name) || 'cliente'
   const dateSlug = new Date(routine.created_at).toISOString().slice(0, 10)
   const outputPath = join(app.getPath('temp'), `rutina-${clientSlug}-${dateSlug}.pdf`)
+
+  const doc = pdfMake.createPdf(docDefinition)
+  await doc.write(outputPath)
+
+  return outputPath
+}
+
+// 58mm = 58 * 72 / 25.4 pt, redondeado. Alto fijo generoso (no hay forma de
+// pedirle a pdfmake una página "de largo infinito" como una bobina térmica;
+// un PDF de una sola página con algo de blanco al final funciona bien tanto
+// para imprimir como para enviar).
+const RECEIPT_WIDTH = 164
+const RECEIPT_HEIGHT = 235
+
+interface PaymentReceiptData extends ClientPayment {
+  client: Client
+}
+
+export async function exportPaymentReceiptToPdf(paymentId: string): Promise<string> {
+  await ensureSignedIn()
+
+  const { data, error } = await supabase
+    .from('client_payments')
+    .select('*, client:clients(*)')
+    .eq('id', paymentId)
+    .single()
+  if (error) throw error
+
+  const payment = data as unknown as PaymentReceiptData
+  const months = PLAN_MONTHS[payment.plan]
+
+  const dashedLine = {
+    canvas: [
+      {
+        type: 'line',
+        x1: 0,
+        y1: 0,
+        x2: RECEIPT_WIDTH - 24,
+        y2: 0,
+        lineWidth: 1,
+        lineColor: '#999999',
+        dash: { length: 2, space: 2 }
+      }
+    ],
+    margin: [0, 6, 0, 6] as [number, number, number, number]
+  }
+
+  const docDefinition = {
+    pageSize: { width: RECEIPT_WIDTH, height: RECEIPT_HEIGHT },
+    pageMargins: [12, 14, 12, 14] as [number, number, number, number],
+    content: [
+      { text: 'CT GYM', bold: true, fontSize: 13, alignment: 'center' },
+      { text: 'RECIBO OFICIAL', fontSize: 8, alignment: 'center', margin: [0, 2, 0, 0] },
+      {
+        text: formatDateOnly(payment.paid_at),
+        fontSize: 8,
+        alignment: 'center',
+        color: '#666666'
+      },
+      dashedLine,
+      { text: `ATLETA: ${payment.client.full_name.toUpperCase()}`, fontSize: 8, margin: [0, 2, 0, 4] },
+      { text: `CÉDULA: ${payment.client.cedula || '—'}`, fontSize: 8, margin: [0, 0, 0, 4] },
+      { text: `PLAN: ${months} MES(ES)`, fontSize: 8, margin: [0, 0, 0, 4] },
+      { text: `VENCE: ${formatDateOnly(payment.due_at)}`, fontSize: 8 },
+      dashedLine,
+      {
+        table: {
+          widths: ['*'],
+          body: [
+            [
+              {
+                stack: [
+                  { text: 'CUPÓN DE SORTEO', bold: true, fontSize: 8, alignment: 'center' },
+                  {
+                    text: 'Participás del sorteo mensual por estar al día.',
+                    fontSize: 7,
+                    alignment: 'center',
+                    margin: [0, 4, 0, 0]
+                  },
+                  { text: '¡Éxitos, Campeón!', fontSize: 7, alignment: 'center', margin: [0, 2, 0, 0] }
+                ],
+                margin: [4, 6, 4, 6]
+              }
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: () => 1,
+          vLineWidth: () => 1,
+          hLineColor: () => '#333333',
+          vLineColor: () => '#333333'
+        }
+      },
+      {
+        text: 'Entrena duro, entrena en CT GYM.',
+        fontSize: 7,
+        alignment: 'center',
+        color: '#888888',
+        margin: [0, 10, 0, 0]
+      }
+    ],
+    defaultStyle: { font: 'Roboto', fontSize: 8 }
+  }
+
+  const clientSlug = sanitizeFilename(payment.client.full_name) || 'cliente'
+  const outputPath = join(app.getPath('temp'), `recibo-${clientSlug}-${payment.paid_at}.pdf`)
 
   const doc = pdfMake.createPdf(docDefinition)
   await doc.write(outputPath)

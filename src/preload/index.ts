@@ -3,6 +3,8 @@ import { electronAPI } from '@electron-toolkit/preload'
 import type {
   Client,
   ClientInput,
+  ClientPayment,
+  ClientPaymentInput,
   Exercise,
   ExerciseInput,
   Routine,
@@ -19,6 +21,15 @@ const api = {
     update: (id: string, input: Partial<ClientInput>): Promise<Client> =>
       ipcRenderer.invoke('clients:update', id, input),
     delete: (id: string): Promise<void> => ipcRenderer.invoke('clients:delete', id)
+  },
+  payments: {
+    listByClient: (clientId: string): Promise<ClientPayment[]> =>
+      ipcRenderer.invoke('payments:listByClient', clientId),
+    listLatest: (): Promise<ClientPayment[]> => ipcRenderer.invoke('payments:listLatest'),
+    create: (input: ClientPaymentInput): Promise<ClientPayment> =>
+      ipcRenderer.invoke('payments:create', input),
+    exportReceipt: (paymentId: string): Promise<string> =>
+      ipcRenderer.invoke('payments:export-receipt', paymentId)
   },
   exercises: {
     list: (): Promise<Exercise[]> => ipcRenderer.invoke('exercises:list'),
