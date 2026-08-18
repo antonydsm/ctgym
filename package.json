@@ -1,6 +1,6 @@
 {
   "name": "ctgym",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "CT GYM - App de escritorio para rutinas y envío por WhatsApp",
   "main": "./out/main/index.js",
   "author": "CT GYM",
